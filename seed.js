@@ -157,9 +157,9 @@ const hash = bcrypt.hashSync("password123", 10);
 
 const USERS = [
   {
-    id: "usr_afshin",
+    id: "usr_admin",
     name: "Afshin Dhanani",
-    email: "afshin@travkings.com",
+    email: "admin@travkings.com",
     role: "Super Admin",
     avatar: "👑",
     color: "#60A5FA",
@@ -210,6 +210,87 @@ const USERS = [
     color: "#059669",
     is_super_admin: 0,
   },
+  {
+    id: "usr_arjun",
+    name: "Arjun Paule",
+    email: "arjun@travkings.com",
+    role: "Finance Head",
+    avatar: "💰",
+    color: "#10B981",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_riya",
+    name: "Riya Patel",
+    email: "riya@travkings.com",
+    role: "Marketing Lead",
+    avatar: "📈",
+    color: "#EC4899",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_james",
+    name: "James Wilson",
+    email: "james@travkings.com",
+    role: "Branch Manager",
+    avatar: "🏢",
+    color: "#F59E0B",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_fatima",
+    name: "Fatima Ali",
+    email: "fatima@travkings.com",
+    role: "Ticketing Exec",
+    avatar: "✈️",
+    color: "#3B82F6",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_emile",
+    name: "Emile Smith",
+    email: "emile@travkings.com",
+    role: "Branch Manager",
+    avatar: "🌍",
+    color: "#10B981",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_priya",
+    name: "Priya Sharma",
+    email: "priya@hotelkings.com",
+    role: "General Manager",
+    avatar: "🏨",
+    color: "#8B5CF6",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_rahul",
+    name: "Rahul Gupta",
+    email: "rahul@hotelkings.com",
+    role: "Finance Head",
+    avatar: "📊",
+    color: "#6366F1",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_sara",
+    name: "Sara Khan",
+    email: "sara@quinaliza.com",
+    role: "Marketing Lead",
+    avatar: "✨",
+    color: "#D946EF",
+    is_super_admin: 0,
+  },
+  {
+    id: "usr_amir",
+    name: "Amir Sheikh",
+    email: "amir@kingslogistics.com",
+    role: "Branch Manager",
+    avatar: "🚛",
+    color: "#14B8A6",
+    is_super_admin: 0,
+  },
 ];
 
 const insUsr = db.prepare(
@@ -243,12 +324,21 @@ const insDpA = db.prepare(
   "INSERT OR IGNORE INTO user_departments (user_id,department_id) VALUES (?,?)",
 );
 
-// All users belong to TravKings company
+// Map users to companies and branches
 USERS.forEach((u) => {
-  insCmp.run(u.id, "co_tk");
-
-  // All users belong to Mumbai branch
-  insBrA.run(u.id, "br_mumbai");
+  if (u.email.endsWith("@travkings.com")) {
+    insCmp.run(u.id, "co_tk");
+    insBrA.run(u.id, "br_mumbai");
+  } else if (u.email.endsWith("@hotelkings.com")) {
+    insCmp.run(u.id, "co_hkp");
+    insBrA.run(u.id, "br_mumbai"); // Default to Mumbai for now
+  } else if (u.email.endsWith("@quinaliza.com")) {
+    insCmp.run(u.id, "co_qa");
+    insBrA.run(u.id, "br_mumbai");
+  } else if (u.email.endsWith("@kingslogistics.com")) {
+    insCmp.run(u.id, "co_kl");
+    insBrA.run(u.id, "br_mumbai");
+  }
 });
 
 // Department assignment
@@ -259,13 +349,13 @@ USERS.forEach((u) => {
 });
 
 // Finance Team
-["usr_faiz", "usr_rohan"].forEach((u) => {
+["usr_faiz", "usr_rohan", "usr_arjun", "usr_rahul"].forEach((u) => {
   insDpA.run(u, "dept_fin");
 });
 
 // Super Admin gets all departments
 DEPTS.forEach((d) => {
-  insDpA.run("usr_afshin", d.id);
+  insDpA.run("usr_admin", d.id);
 });
 
 console.log("✅ User access granted\n");
