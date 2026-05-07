@@ -12,7 +12,7 @@ const path = require("path");
 const fs = require("fs");
 const db = require("./db");
 const loggerMiddleware = require("./middleware/logs");
-// require("./seed");
+require("./seed");
 
 const app = express();
 const server = http.createServer(app);
