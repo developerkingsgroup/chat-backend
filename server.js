@@ -132,22 +132,84 @@ app.post("/api/auth/register", async (req, res) => {
 
 app.post("/api/auth/login", async (req, res) => {
   try {
+    console.log("\n════════ LOGIN DEBUG ════════");
+
     const { email, password } = req.body;
-    const allusers = await db
-      .prepare("SELECT  email FROM users")
+
+    console.log("📧 Email:", email);
+    console.log("🔑 Password:", password);
+
+    // Check all users
+    const allUsers = db
+      .prepare("SELECT id, email, role FROM users")
       .all();
 
-      console.log("allusers",allusers)
-    const user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
-    if (!(await bcrypt.compare(password, user.password_hash)))
-      return res.status(401).json({ error: "Invalid credentials" });
-    db.prepare("UPDATE users SET last_seen=CURRENT_TIMESTAMP WHERE id=?").run(
-      user.id,
+    console.log("\n👥 Existing Users:");
+    console.table(allUsers);
+
+    // Find user
+    const user = db
+      .prepare("SELECT * FROM users WHERE email=?")
+      .get(email);
+
+    console.log("\n🔍 DB User:");
+    console.log(user);
+
+    if (!user) {
+      console.log("❌ User not found");
+      return res.status(401).json({
+        error: "Invalid credentials",
+        debug: "User not found",
+      });
+    }
+
+    console.log("\n🔐 Stored Hash:");
+    console.log(user.password_hash);
+
+    // Compare password
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password_hash,
     );
-    res.json({ token: signToken(user), user: safeUser(user) });
+
+    console.log("\n🧪 Password Match:", isMatch);
+
+    if (!isMatch) {
+      console.log("❌ Password mismatch");
+
+      // TEMP TEST
+      const testHash = bcrypt.hashSync(password, 10);
+
+      console.log("\n🧪 Fresh Hash Test:");
+      console.log(testHash);
+
+      return res.status(401).json({
+        error: "Invalid credentials",
+        debug: "Password mismatch",
+      });
+    }
+
+    // Update last seen
+    db.prepare(`
+      UPDATE users
+      SET last_seen=CURRENT_TIMESTAMP
+      WHERE id=?
+    `).run(user.id);
+
+    console.log("✅ Login Success");
+    console.log("══════════════════════════════\n");
+
+    res.json({
+      token: signToken(user),
+      user: safeUser(user),
+    });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.log("💥 LOGIN ERROR:");
+    console.error(e);
+
+    res.status(500).json({
+      error: e.message,
+    });
   }
 });
 
