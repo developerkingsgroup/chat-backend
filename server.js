@@ -134,8 +134,8 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
-    // if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    // if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ error: 'Invalid credentials' });
     db.prepare("UPDATE users SET last_seen=CURRENT_TIMESTAMP WHERE id=?").run(
       user.id,
     );
