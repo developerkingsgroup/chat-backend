@@ -987,4 +987,4 @@ console.log("  sara@quinaliza.com       → Marketing Lead");
 console.log("  amir@kingslogistics.com  → Branch Manager");
 console.log("═══════════════════════════════════════");
 console.log("\n✅ Run: node server.js to start the backend");
-module.exports = { seed };
+

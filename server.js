@@ -11,7 +11,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const db = require("./db");
-const { seed } = require("./seed");
+require("./seed");
 
 const app = express();
 const server = http.createServer(app);
@@ -777,7 +777,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true, ts: new Date() }));
 // ── Start ─────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log("staritng seed");
-  seed();
+ 
   console.log(`✅  TravKings backend → http://localhost:${PORT}`);
   console.log(`✅  WebSocket         → ws://localhost:${PORT}`);
 });
