@@ -24,6 +24,7 @@ const ChatGroup = require('./models/ChatGroup');
 const Message = require('./models/Message');
 const CallLog = require('./models/CallLog');
 const Reminder = require('./models/Reminder');
+const { seed } = require('./seed');
 
 const app    = express();
 const server = http.createServer(app);
@@ -33,7 +34,9 @@ const PORT    = process.env.PORT || 4000;
 const SECRET  = process.env.JWT_SECRET || 'travkings_jwt_secret_change_me';
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(()=>{
+  seed()
+})
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());

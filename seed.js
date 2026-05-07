@@ -2,23 +2,23 @@
 // Usage: node seed.js
 // Run from backend folder: cd backend && node seed.js
 
-require('dotenv').config();
+require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const { v4: uuid } = require("uuid");
-const connectDB = require('./config/db');
+const connectDB = require("./config/db");
 
 // Import Mongoose Models
-const Company = require('./models/Company');
-const Branch = require('./models/Branch');
-const Department = require('./models/Department');
-const User = require('./models/User');
-const UserCompany = require('./models/UserCompany');
-const UserBranch = require('./models/UserBranch');
-const UserDepartment = require('./models/UserDepartment');
-const ChatGroup = require('./models/ChatGroup');
-const Message = require('./models/Message');
-const CallLog = require('./models/CallLog');
-const Reminder = require('./models/Reminder');
+const Company = require("./models/Company");
+const Branch = require("./models/Branch");
+const Department = require("./models/Department");
+const User = require("./models/User");
+const UserCompany = require("./models/UserCompany");
+const UserBranch = require("./models/UserBranch");
+const UserDepartment = require("./models/UserDepartment");
+const ChatGroup = require("./models/ChatGroup");
+const Message = require("./models/Message");
+const CallLog = require("./models/CallLog");
+const Reminder = require("./models/Reminder");
 
 // Connect to MongoDB
 connectDB();
@@ -349,54 +349,99 @@ const seed = async () => {
     const userDepartmentsToInsert = [];
 
     // Super Admin — all access
-    COMPANIES.forEach((c) => userCompaniesToInsert.push({ user_id: "usr_admin", company_id: c._id }));
-    BRANCHES.forEach((b) => userBranchesToInsert.push({ user_id: "usr_admin", branch_id: b._id }));
-    DEPTS.forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_admin", department_id: d._id }));
+    COMPANIES.forEach((c) =>
+      userCompaniesToInsert.push({ user_id: "usr_admin", company_id: c._id }),
+    );
+    BRANCHES.forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_admin", branch_id: b._id }),
+    );
+    DEPTS.forEach((d) =>
+      userDepartmentsToInsert.push({
+        user_id: "usr_admin",
+        department_id: d._id,
+      }),
+    );
 
     // Arjun — TravKings, AMD+BOM, Finance
     userCompaniesToInsert.push({ user_id: "usr_arjun", company_id: "co_tk" });
-    ["br_amd", "br_bom"].forEach((b) => userBranchesToInsert.push({ user_id: "usr_arjun", branch_id: b }));
-    ["dept_fin", "dept_bm"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_arjun", department_id: d }));
+    ["br_amd", "br_bom"].forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_arjun", branch_id: b }),
+    );
+    ["dept_fin", "dept_bm"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_arjun", department_id: d }),
+    );
 
     // Riya — TravKings, BOM+NBO, Marketing+Holidays
     userCompaniesToInsert.push({ user_id: "usr_riya", company_id: "co_tk" });
-    ["br_bom", "br_nbo"].forEach((b) => userBranchesToInsert.push({ user_id: "usr_riya", branch_id: b }));
-    ["dept_mktg", "dept_hol"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_riya", department_id: d }));
+    ["br_bom", "br_nbo"].forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_riya", branch_id: b }),
+    );
+    ["dept_mktg", "dept_hol"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_riya", department_id: d }),
+    );
 
     // James — TravKings, NBO+DAR, Branch Manager
     userCompaniesToInsert.push({ user_id: "usr_james", company_id: "co_tk" });
-    ["br_nbo", "br_dar"].forEach((b) => userBranchesToInsert.push({ user_id: "usr_james", branch_id: b }));
-    ["dept_bm", "dept_tkt"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_james", department_id: d }));
+    ["br_nbo", "br_dar"].forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_james", branch_id: b }),
+    );
+    ["dept_bm", "dept_tkt"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_james", department_id: d }),
+    );
 
     // Fatima — TravKings, AMD+DRC, Ticketing
     userCompaniesToInsert.push({ user_id: "usr_fatima", company_id: "co_tk" });
-    ["br_amd", "br_drc"].forEach((b) => userBranchesToInsert.push({ user_id: "usr_fatima", branch_id: b }));
-    ["dept_tkt", "dept_hol"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_fatima", department_id: d }));
+    ["br_amd", "br_drc"].forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_fatima", branch_id: b }),
+    );
+    ["dept_tkt", "dept_hol"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_fatima", department_id: d }),
+    );
 
     // Emile — TravKings, DRC+DAR, Branch Manager
     userCompaniesToInsert.push({ user_id: "usr_emile", company_id: "co_tk" });
-    ["br_drc", "br_dar"].forEach((b) => userBranchesToInsert.push({ user_id: "usr_emile", branch_id: b }));
-    ["dept_bm", "dept_gm"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_emile", department_id: d }));
+    ["br_drc", "br_dar"].forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_emile", branch_id: b }),
+    );
+    ["dept_bm", "dept_gm"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_emile", department_id: d }),
+    );
 
     // Priya — Hotel Kings Palace, Lshi, GM
     userCompaniesToInsert.push({ user_id: "usr_priya", company_id: "co_hkp" });
-    userBranchesToInsert.push({ user_id: "usr_priya", branch_id: "br_lshi_hkp" });
-    ["dept_gm", "dept_bm", "dept_mktg"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_priya", department_id: d }));
+    userBranchesToInsert.push({
+      user_id: "usr_priya",
+      branch_id: "br_lshi_hkp",
+    });
+    ["dept_gm", "dept_bm", "dept_mktg"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_priya", department_id: d }),
+    );
 
     // Rahul — Hotel Kings Palace, Lshi, Finance
     userCompaniesToInsert.push({ user_id: "usr_rahul", company_id: "co_hkp" });
-    userBranchesToInsert.push({ user_id: "usr_rahul", branch_id: "br_lshi_hkp" });
-    ["dept_fin", "dept_tkt"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_rahul", department_id: d }));
+    userBranchesToInsert.push({
+      user_id: "usr_rahul",
+      branch_id: "br_lshi_hkp",
+    });
+    ["dept_fin", "dept_tkt"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_rahul", department_id: d }),
+    );
 
     // Sara — Quin Aliza, Lshi, Marketing
     userCompaniesToInsert.push({ user_id: "usr_sara", company_id: "co_qa" });
     userBranchesToInsert.push({ user_id: "usr_sara", branch_id: "br_lshi_qa" });
-    ["dept_mktg", "dept_hol"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_sara", department_id: d }));
+    ["dept_mktg", "dept_hol"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_sara", department_id: d }),
+    );
 
     // Amir — Kings Logistics, Lshi+DAR, Branch Manager
     userCompaniesToInsert.push({ user_id: "usr_amir", company_id: "co_kl" });
-    ["br_lshi_kl", "br_dar_kl"].forEach((b) => userBranchesToInsert.push({ user_id: "usr_amir", branch_id: b }));
-    ["dept_bm", "dept_fin"].forEach((d) => userDepartmentsToInsert.push({ user_id: "usr_amir", department_id: d }));
+    ["br_lshi_kl", "br_dar_kl"].forEach((b) =>
+      userBranchesToInsert.push({ user_id: "usr_amir", branch_id: b }),
+    );
+    ["dept_bm", "dept_fin"].forEach((d) =>
+      userDepartmentsToInsert.push({ user_id: "usr_amir", department_id: d }),
+    );
 
     await UserCompany.insertMany(userCompaniesToInsert);
     await UserBranch.insertMany(userBranchesToInsert);
@@ -405,7 +450,7 @@ const seed = async () => {
 
     // ── Messages ──────────────────────────────────────────────────────────────────
     console.log("💬 Seeding messages...");
-    const groups = await ChatGroup.find({}, '_id name'); // Get all chat group IDs
+    const groups = await ChatGroup.find({}, "_id name"); // Get all chat group IDs
 
     const messagesToInsert = [];
 
@@ -419,7 +464,10 @@ const seed = async () => {
         "usr_arjun",
         "Q3 expense reports are ready for review. Finance team please check.",
       ],
-      ["usr_riya", "New campaign for Maldives package is live on all platforms 🎉"],
+      [
+        "usr_riya",
+        "New campaign for Maldives package is live on all platforms 🎉",
+      ],
       [
         "usr_james",
         "Flight KQ101 delayed by 2 hours. Informing all passengers now.",
@@ -428,14 +476,20 @@ const seed = async () => {
         "usr_fatima",
         "Dubai group booking confirmed — 12 passengers, all tickets issued.",
       ],
-      ["usr_emile", "MiningCo deal signed today ✅ Contract sent to headquarters."],
+      [
+        "usr_emile",
+        "MiningCo deal signed today ✅ Contract sent to headquarters.",
+      ],
       ["usr_admin", "Reminder: Team meeting tomorrow at 10 AM via video call."],
       [
         "usr_arjun",
         "Salary slips for March have been sent. Please confirm receipt.",
       ],
       ["usr_riya", "Instagram campaign reached 50K impressions this week! 📊"],
-      ["usr_james", "Airport transfer arranged for VIP clients arriving Friday."],
+      [
+        "usr_james",
+        "Airport transfer arranged for VIP clients arriving Friday.",
+      ],
     ];
 
     groups.forEach((grp, gi) => {
@@ -460,7 +514,8 @@ const seed = async () => {
         to: "usr_arjun",
         msgs: [
           {
-            content: "Arjun, please prepare the Q3 financial summary by Friday.",
+            content:
+              "Arjun, please prepare the Q3 financial summary by Friday.",
             time: hoursAgo(5),
           },
           {
@@ -468,7 +523,10 @@ const seed = async () => {
             time: hoursAgo(4),
             swap: true,
           },
-          { content: "Great, include all 4 companies please.", time: hoursAgo(3) },
+          {
+            content: "Great, include all 4 companies please.",
+            time: hoursAgo(3),
+          },
         ],
       },
       {
@@ -522,7 +580,8 @@ const seed = async () => {
         to: "usr_admin",
         msgs: [
           {
-            content: "Hotel occupancy this month is above 90%! Best month ever.",
+            content:
+              "Hotel occupancy this month is above 90%! Best month ever.",
             time: daysAgo(2),
           },
           {
@@ -551,7 +610,10 @@ const seed = async () => {
         from: "usr_amir",
         to: "usr_emile",
         msgs: [
-          { content: "DAR branch logistics report is ready.", time: daysAgo(1) },
+          {
+            content: "DAR branch logistics report is ready.",
+            time: daysAgo(1),
+          },
           {
             content: "Send it over, will review tonight.",
             time: daysAgo(1),
@@ -940,30 +1002,14 @@ const seed = async () => {
     console.log("═══════════════════════════════════════");
     console.log("🎉 Seed Complete! Summary:");
     console.log("═══════════════════════════════════════");
-    console.log(
-      `  Companies:    ${await Company.countDocuments()}`,
-    );
-    console.log(
-      `  Branches:     ${await Branch.countDocuments()}`,
-    );
-    console.log(
-      `  Departments:  ${await Department.countDocuments()}`,
-    );
-    console.log(
-      `  Chat Groups:  ${await ChatGroup.countDocuments()}`,
-    );
-    console.log(
-      `  Users:        ${await User.countDocuments()}`,
-    );
-    console.log(
-      `  Messages:     ${await Message.countDocuments()}`,
-    );
-    console.log(
-      `  Call Logs:    ${await CallLog.countDocuments()}`,
-    );
-    console.log(
-      `  Reminders:    ${await Reminder.countDocuments()}`,
-    );
+    console.log(`  Companies:    ${await Company.countDocuments()}`);
+    console.log(`  Branches:     ${await Branch.countDocuments()}`);
+    console.log(`  Departments:  ${await Department.countDocuments()}`);
+    console.log(`  Chat Groups:  ${await ChatGroup.countDocuments()}`);
+    console.log(`  Users:        ${await User.countDocuments()}`);
+    console.log(`  Messages:     ${await Message.countDocuments()}`);
+    console.log(`  Call Logs:    ${await CallLog.countDocuments()}`);
+    console.log(`  Reminders:    ${await Reminder.countDocuments()}`);
     console.log("═══════════════════════════════════════");
     console.log("");
     console.log("👥 Login Credentials (all use password: password123)");
@@ -987,4 +1033,5 @@ const seed = async () => {
   }
 };
 
-seed();
+module.exports = { seed };
+// seed();
