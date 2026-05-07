@@ -24,7 +24,7 @@ const SECRET = process.env.JWT_SECRET || "travkings_jwt_secret_change_me";
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-app.use(loggerMiddleware);
+// app.use(loggerMiddleware);
 // Static file serving
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -139,13 +139,6 @@ app.post("/api/auth/login", async (req, res) => {
     console.log("📧 Email:", email);
     console.log("🔑 Password:", password);
 
-    // Check all users
-    const allUsers = db
-      .prepare("SELECT id, email, role FROM users")
-      .all();
-
-    console.log("\n👥 Existing Users:");
-    console.table(allUsers);
 
     // Find user
     const user = db
@@ -163,8 +156,7 @@ app.post("/api/auth/login", async (req, res) => {
       });
     }
 
-    console.log("\n🔐 Stored Hash:");
-    console.log(user.password_hash);
+
 
     // Compare password
     const isMatch = await bcrypt.compare(
@@ -172,7 +164,7 @@ app.post("/api/auth/login", async (req, res) => {
       user.password_hash,
     );
 
-    console.log("\n🧪 Password Match:", isMatch);
+
 
     if (!isMatch) {
       console.log("❌ Password mismatch");
