@@ -133,9 +133,15 @@ app.post("/api/auth/register", async (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    const allusers = await db
+      .prepare("SELECT  email FROM users")
+      .all();
+
+      console.log("allusers",allusers)
     const user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+    if (!(await bcrypt.compare(password, user.password_hash)))
+      return res.status(401).json({ error: "Invalid credentials" });
     db.prepare("UPDATE users SET last_seen=CURRENT_TIMESTAMP WHERE id=?").run(
       user.id,
     );
@@ -239,12 +245,16 @@ app.get("/api/users/search", auth, (req, res) => {
   const { q } = req.query;
   if (!q) return res.json([]);
   const pattern = `%${q}%`;
-  const users = db.prepare(`
+  const users = db
+    .prepare(
+      `
     SELECT * FROM users 
     WHERE name LIKE ? OR email LIKE ? OR role LIKE ?
     ORDER BY name
     LIMIT 50
-  `).all(pattern, pattern, pattern);
+  `,
+    )
+    .all(pattern, pattern, pattern);
   res.json(users.map(enrichUser));
 });
 
@@ -791,7 +801,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true, ts: new Date() }));
 // ── Start ─────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log("staritng seed");
- 
+
   console.log(`✅  TravKings backend → http://localhost:${PORT}`);
   console.log(`✅  WebSocket         → ws://localhost:${PORT}`);
 });
