@@ -11,6 +11,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const db = require("./db");
+const loggerMiddleware = require("./middleware/logs");
 // require("./seed");
 
 const app = express();
@@ -23,7 +24,7 @@ const SECRET = process.env.JWT_SECRET || "travkings_jwt_secret_change_me";
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
-
+app.use(loggerMiddleware);
 // Static file serving
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
