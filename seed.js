@@ -39,11 +39,11 @@ console.log("✅ Cleared\n");
 console.log("🏷️  Seeding departments...");
 const DEPTS = [
   {
-    id: "dept_mktg",
-    name: "Marketing",
-    short_name: "MKTG",
-    icon: "📣",
-    color: "#F59E0B",
+    id: "dept_dev",
+    name: "Development",
+    short_name: "DEV",
+    icon: "💻",
+    color: "#3B82F6",
   },
   {
     id: "dept_fin",
@@ -51,34 +51,6 @@ const DEPTS = [
     short_name: "FIN",
     icon: "💰",
     color: "#10B981",
-  },
-  {
-    id: "dept_tkt",
-    name: "Ticketing",
-    short_name: "TKT",
-    icon: "🎫",
-    color: "#3B82F6",
-  },
-  {
-    id: "dept_hol",
-    name: "Holidays",
-    short_name: "HOL",
-    icon: "🌴",
-    color: "#EC4899",
-  },
-  {
-    id: "dept_bm",
-    name: "Branch Manager",
-    short_name: "BM",
-    icon: "🏢",
-    color: "#8B5CF6",
-  },
-  {
-    id: "dept_gm",
-    name: "General Manager",
-    short_name: "GM",
-    icon: "👔",
-    color: "#EF4444",
   },
 ];
 const insDept = db.prepare(
@@ -118,6 +90,13 @@ const COMPANIES = [
     avatar: "🚛",
     color: "#10B981",
   },
+  {
+    id: "co_media",
+    name: "Kings Media",
+    tagline: "Digital Marketing",
+    avatar: "📺",
+    color: "#EF4444",
+  },
 ];
 const insCo = db.prepare(
   "INSERT OR IGNORE INTO companies (id,name,tagline,avatar,color) VALUES (?,?,?,?,?)",
@@ -128,81 +107,21 @@ console.log(`✅ ${COMPANIES.length} companies\n`);
 // ── Branches ──────────────────────────────────────────────────────────────────
 console.log("🌿 Seeding branches...");
 const BRANCHES = [
-  // TravKings
   {
-    id: "br_amd",
+    id: "br_mumbai",
     company_id: "co_tk",
-    name: "AMD Branch",
-    city: "Ahmedabad",
-    avatar: "🏙️",
-    color: "#6366F1",
-  },
-  {
-    id: "br_bom",
-    company_id: "co_tk",
-    name: "BOM Branch",
+    name: "Mumbai Branch",
     city: "Mumbai",
     avatar: "🌊",
     color: "#0EA5E9",
   },
   {
-    id: "br_dar",
+    id: "br_ahmedabad",
     company_id: "co_tk",
-    name: "DAR Branch",
-    city: "Dar es Salaam",
-    avatar: "🌍",
-    color: "#10B981",
-  },
-  {
-    id: "br_nbo",
-    company_id: "co_tk",
-    name: "NBO Branch",
-    city: "Nairobi",
-    avatar: "🦁",
-    color: "#F59E0B",
-  },
-  {
-    id: "br_drc",
-    company_id: "co_tk",
-    name: "DRC Branch",
-    city: "Kinshasa",
-    avatar: "🌿",
-    color: "#EC4899",
-  },
-  // Hotel Kings Palace
-  {
-    id: "br_lshi_hkp",
-    company_id: "co_hkp",
-    name: "Lshi Branch",
-    city: "Lshi",
-    avatar: "🏨",
-    color: "#D97706",
-  },
-  // Quin Aliza
-  {
-    id: "br_lshi_qa",
-    company_id: "co_qa",
-    name: "Lshi Branch",
-    city: "Lshi",
-    avatar: "🌟",
-    color: "#8B5CF6",
-  },
-  // Kings Logistics
-  {
-    id: "br_lshi_kl",
-    company_id: "co_kl",
-    name: "Lshi Branch",
-    city: "Lshi",
-    avatar: "📦",
-    color: "#10B981",
-  },
-  {
-    id: "br_dar_kl",
-    company_id: "co_kl",
-    name: "DAR Branch",
-    city: "Dar es Salaam",
-    avatar: "🌍",
-    color: "#F59E0B",
+    name: "Ahmedabad Branch",
+    city: "Ahmedabad",
+    avatar: "🏙️",
+    color: "#6366F1",
   },
 ];
 const insBr = db.prepare(
@@ -215,18 +134,22 @@ console.log(`✅ ${BRANCHES.length} branches\n`);
 
 // ── Chat Groups (auto create for each branch × dept) ──────────────────────────
 console.log("💬 Seeding chat groups...");
+
 const insGrp = db.prepare(
   "INSERT OR IGNORE INTO chat_groups (id,branch_id,department_id,name) VALUES (?,?,?,?)",
 );
-let grpCount = 0;
-BRANCHES.forEach((br) => {
-  DEPTS.forEach((d) => {
-    const code = br.name.split(" ")[0];
-    insGrp.run(uuid(), br.id, d.id, `${code} ${d.short_name}`);
-    grpCount++;
-  });
+
+// Only Mumbai branch groups
+DEPTS.forEach((d) => {
+  insGrp.run(
+    uuid(),
+    "br_mumbai",
+    d.id,
+    `Mumbai ${d.short_name}`,
+  );
 });
-console.log(`✅ ${grpCount} chat groups\n`);
+
+console.log("✅ Chat groups created\n");
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 console.log("👤 Seeding users...");
@@ -234,93 +157,57 @@ const hash = bcrypt.hashSync("password123", 10);
 
 const USERS = [
   {
-    id: "usr_admin",
-    name: "Super Admin",
-    email: "admin@travkings.com",
+    id: "usr_afshin",
+    name: "Afshin Dhanani",
+    email: "afshin@travkings.com",
     role: "Super Admin",
     avatar: "👑",
     color: "#60A5FA",
     is_super_admin: 1,
   },
   {
-    id: "usr_arjun",
-    name: "Arjun Mehta",
-    email: "arjun@travkings.com",
-    role: "Finance Head",
-    avatar: "👨‍💼",
-    color: "#10B981",
-    is_super_admin: 0,
-  },
-  {
-    id: "usr_riya",
-    name: "Riya Sharma",
-    email: "riya@travkings.com",
-    role: "Marketing Lead",
-    avatar: "👩‍💻",
-    color: "#F59E0B",
-    is_super_admin: 0,
-  },
-  {
-    id: "usr_james",
-    name: "James Omondi",
-    email: "james@travkings.com",
-    role: "Branch Manager",
-    avatar: "👨‍✈️",
+    id: "usr_ratnesh",
+    name: "Ratnesh Paule",
+    email: "ratnesh@travkings.com",
+    role: "Developer",
+    avatar: "💻",
     color: "#3B82F6",
     is_super_admin: 0,
   },
   {
-    id: "usr_fatima",
-    name: "Fatima Al-Zahra",
-    email: "fatima@travkings.com",
-    role: "Ticketing Exec",
-    avatar: "👩‍🦱",
-    color: "#EC4899",
+    id: "usr_anuvab",
+    name: "Anuvab",
+    email: "anuvab@travkings.com",
+    role: "Developer",
+    avatar: "🧑‍💻",
+    color: "#2563EB",
     is_super_admin: 0,
   },
   {
-    id: "usr_emile",
-    name: "Emile Kabongo",
-    email: "emile@travkings.com",
-    role: "Branch Manager",
-    avatar: "👨‍🔬",
-    color: "#8B5CF6",
-    is_super_admin: 0,
-  },
-  {
-    id: "usr_priya",
-    name: "Priya Nair",
-    email: "priya@hotelkings.com",
-    role: "General Manager",
-    avatar: "👩‍💼",
-    color: "#D97706",
-    is_super_admin: 0,
-  },
-  {
-    id: "usr_rahul",
-    name: "Rahul Verma",
-    email: "rahul@hotelkings.com",
-    role: "Finance Head",
+    id: "usr_surajit",
+    name: "Surajit",
+    email: "surajit@travkings.com",
+    role: "Developer",
     avatar: "👨‍💻",
-    color: "#EF4444",
+    color: "#1D4ED8",
     is_super_admin: 0,
   },
   {
-    id: "usr_sara",
-    name: "Sara Ahmed",
-    email: "sara@quinaliza.com",
-    role: "Marketing Lead",
-    avatar: "👩‍🎨",
-    color: "#A78BFA",
+    id: "usr_faiz",
+    name: "Faiz Patel",
+    email: "faiz@travkings.com",
+    role: "Finance",
+    avatar: "💰",
+    color: "#10B981",
     is_super_admin: 0,
   },
   {
-    id: "usr_amir",
-    name: "Amir Hassan",
-    email: "amir@kingslogistics.com",
-    role: "Branch Manager",
-    avatar: "🧑‍💼",
-    color: "#34D399",
+    id: "usr_rohan",
+    name: "Rohan",
+    email: "rohan@travkings.com",
+    role: "Finance",
+    avatar: "📊",
+    color: "#059669",
     is_super_admin: 0,
   },
 ];
@@ -341,68 +228,45 @@ USERS.forEach((u) =>
   ),
 );
 console.log(`✅ ${USERS.length} users (password: password123)\n`);
-
-// ── User Access ───────────────────────────────────────────────────────────────
+// ── User Access ─────────────────────────────────────────────
 console.log("🔐 Seeding user access...");
+
 const insCmp = db.prepare(
   "INSERT OR IGNORE INTO user_companies (user_id,company_id) VALUES (?,?)",
 );
+
 const insBrA = db.prepare(
   "INSERT OR IGNORE INTO user_branches (user_id,branch_id) VALUES (?,?)",
 );
+
 const insDpA = db.prepare(
   "INSERT OR IGNORE INTO user_departments (user_id,department_id) VALUES (?,?)",
 );
 
-// Super Admin — all access
-COMPANIES.forEach((c) => insCmp.run("usr_admin", c.id));
-BRANCHES.forEach((b) => insBrA.run("usr_admin", b.id));
-DEPTS.forEach((d) => insDpA.run("usr_admin", d.id));
+// All users belong to TravKings company
+USERS.forEach((u) => {
+  insCmp.run(u.id, "co_tk");
 
-// Arjun — TravKings, AMD+BOM, Finance
-insCmp.run("usr_arjun", "co_tk");
-["br_amd", "br_bom"].forEach((b) => insBrA.run("usr_arjun", b));
-["dept_fin", "dept_bm"].forEach((d) => insDpA.run("usr_arjun", d));
+  // All users belong to Mumbai branch
+  insBrA.run(u.id, "br_mumbai");
+});
 
-// Riya — TravKings, BOM+NBO, Marketing+Holidays
-insCmp.run("usr_riya", "co_tk");
-["br_bom", "br_nbo"].forEach((b) => insBrA.run("usr_riya", b));
-["dept_mktg", "dept_hol"].forEach((d) => insDpA.run("usr_riya", d));
+// Department assignment
 
-// James — TravKings, NBO+DAR, Branch Manager
-insCmp.run("usr_james", "co_tk");
-["br_nbo", "br_dar"].forEach((b) => insBrA.run("usr_james", b));
-["dept_bm", "dept_tkt"].forEach((d) => insDpA.run("usr_james", d));
+// Dev Team
+["usr_ratnesh", "usr_anuvab", "usr_surajit"].forEach((u) => {
+  insDpA.run(u, "dept_dev");
+});
 
-// Fatima — TravKings, AMD+DRC, Ticketing
-insCmp.run("usr_fatima", "co_tk");
-["br_amd", "br_drc"].forEach((b) => insBrA.run("usr_fatima", b));
-["dept_tkt", "dept_hol"].forEach((d) => insDpA.run("usr_fatima", d));
+// Finance Team
+["usr_faiz", "usr_rohan"].forEach((u) => {
+  insDpA.run(u, "dept_fin");
+});
 
-// Emile — TravKings, DRC+DAR, Branch Manager
-insCmp.run("usr_emile", "co_tk");
-["br_drc", "br_dar"].forEach((b) => insBrA.run("usr_emile", b));
-["dept_bm", "dept_gm"].forEach((d) => insDpA.run("usr_emile", d));
-
-// Priya — Hotel Kings Palace, Lshi, GM
-insCmp.run("usr_priya", "co_hkp");
-insBrA.run("usr_priya", "br_lshi_hkp");
-["dept_gm", "dept_bm", "dept_mktg"].forEach((d) => insDpA.run("usr_priya", d));
-
-// Rahul — Hotel Kings Palace, Lshi, Finance
-insCmp.run("usr_rahul", "co_hkp");
-insBrA.run("usr_rahul", "br_lshi_hkp");
-["dept_fin", "dept_tkt"].forEach((d) => insDpA.run("usr_rahul", d));
-
-// Sara — Quin Aliza, Lshi, Marketing
-insCmp.run("usr_sara", "co_qa");
-insBrA.run("usr_sara", "br_lshi_qa");
-["dept_mktg", "dept_hol"].forEach((d) => insDpA.run("usr_sara", d));
-
-// Amir — Kings Logistics, Lshi+DAR, Branch Manager
-insCmp.run("usr_amir", "co_kl");
-["br_lshi_kl", "br_dar_kl"].forEach((b) => insBrA.run("usr_amir", b));
-["dept_bm", "dept_fin"].forEach((d) => insDpA.run("usr_amir", d));
+// Super Admin gets all departments
+DEPTS.forEach((d) => {
+  insDpA.run("usr_afshin", d.id);
+});
 
 console.log("✅ User access granted\n");
 

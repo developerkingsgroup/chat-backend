@@ -234,6 +234,19 @@ app.get("/api/users", auth, (_req, res) => {
   res.json(users.map(enrichUser));
 });
 
+app.get("/api/users/search", auth, (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.json([]);
+  const pattern = `%${q}%`;
+  const users = db.prepare(`
+    SELECT * FROM users 
+    WHERE name LIKE ? OR email LIKE ? OR role LIKE ?
+    ORDER BY name
+    LIMIT 50
+  `).all(pattern, pattern, pattern);
+  res.json(users.map(enrichUser));
+});
+
 app.post("/api/users", auth, adminOnly, async (req, res) => {
   try {
     const {
