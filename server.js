@@ -70,7 +70,7 @@ const safeUser = (u) => ({ id:u.id, name:u.name, email:u.email, role:u.role, ava
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 const clients = new Map(); // userId → WebSocket
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', async(ws, req) => {
   const token = new URL(req.url, 'ws://x').searchParams.get('token');
   try {
     const decoded = jwt.verify(token, SECRET);
