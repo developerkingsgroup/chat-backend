@@ -1,5 +1,6 @@
 # Dependency directories
 node_modules/
+travkings.db/
 jspm_packages/
 
 # Logs
