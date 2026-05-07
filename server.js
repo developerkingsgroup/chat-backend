@@ -163,6 +163,10 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+app.get("/health", auth, async (req, res) => {
+
+  res.json({time:Date.now()});
+});
 // app.post('/api/auth/login', async (req, res) => {
 //   try {
 //     const { email } = req.body;
