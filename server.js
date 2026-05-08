@@ -80,7 +80,11 @@ const auth = (req, res, next) => {
 const adminOnly = (req, res, next) =>
   req.user.is_super_admin ? next() : res.status(403).json({ error: 'Admin only' });
 
-const safeUser = (u) => ({ id:u.id, name:u.name, email:u.email, role:u.role, avatar:u.avatar, color:u.color, is_super_admin:u.is_super_admin, is_active:u.is_active, last_seen:u.last_seen });
+// Schemas use { _id: false } so the id virtual is not emitted by toJSON().
+// This helper guarantees every plain object has an id field.
+const toPlain = (doc) => ({ ...doc.toObject(), id: String(doc._id) });
+
+const safeUser = (u) => ({ id: String(u._id), name:u.name, email:u.email, role:u.role, avatar:u.avatar, color:u.color, is_super_admin:u.is_super_admin, is_active:u.is_active, last_seen:u.last_seen });
 
 // Flatten a populated message document into the shape the frontend expects
 const fmtMsg = (msg) => {
@@ -288,7 +292,7 @@ app.get('/api/companies', auth, async (_req, res) => {
   const cos = await Company.find({}).sort({ name: 1 });
   const companiesWithBranches = await Promise.all(cos.map(async c => {
     const branches = await Branch.find({ company_id: c._id }).sort({ name: 1 });
-    return { ...c.toObject(), id: c.id, branches };
+    return { ...toPlain(c), branches: branches.map(toPlain) };
   }));
   res.json(companiesWithBranches);
 });
@@ -307,7 +311,7 @@ app.post('/api/companies', auth, adminOnly, async (req, res) => {
   // Grant access to all super admins
   const admins = await User.find({ is_super_admin: true }, '_id');
   await UserCompany.insertMany(admins.map(a => ({ user_id: a._id, company_id: id })));
-  res.status(201).json({ ...company.toObject(), id: company.id, branches: [] });
+  res.status(201).json({ ...toPlain(company), branches: [] });
 });
 
 app.put('/api/companies/:id', auth, adminOnly, async (req, res) => {
@@ -327,7 +331,7 @@ app.delete('/api/companies/:id', auth, adminOnly, async (req, res) => {
 app.get('/api/branches', auth, async (req, res) => {
   const query = req.query.company_id ? { company_id: req.query.company_id } : {};
   const branches = await Branch.find(query).sort({ name: 1 });
-  res.json(branches);
+  res.json(branches.map(toPlain));
 });
 
 app.post('/api/branches', auth, adminOnly, async (req, res) => {
@@ -353,7 +357,7 @@ app.post('/api/branches', auth, adminOnly, async (req, res) => {
   // Grant access to all super admins
   const admins = await User.find({ is_super_admin: true }, '_id');
   await UserBranch.insertMany(admins.map(a => ({ user_id: a._id, branch_id: id })));
-  res.status(201).json(branch);
+  res.status(201).json(toPlain(branch));
 });
 
 app.put('/api/branches/:id', auth, adminOnly, async (req, res) => {
@@ -363,7 +367,10 @@ app.put('/api/branches/:id', auth, adminOnly, async (req, res) => {
 });
 
 // ── DEPARTMENTS ───────────────────────────────────────────────────────────────
-app.get('/api/departments', auth, async (_req, res) => res.json(await Department.find({})));
+app.get('/api/departments', auth, async (_req, res) => {
+  const depts = await Department.find({});
+  res.json(depts.map(toPlain));
+});
 
 app.post('/api/departments', auth, adminOnly, async (req, res) => {
   const { name, short_name, icon, color } = req.body;
@@ -387,7 +394,7 @@ app.post('/api/departments', auth, adminOnly, async (req, res) => {
   // Grant access to all super admins
   const admins = await User.find({ is_super_admin: true }, '_id');
   await UserDepartment.insertMany(admins.map(a => ({ user_id: a._id, department_id: id })));
-  res.status(201).json(department);
+  res.status(201).json(toPlain(department));
 });
 
 // ── CHAT GROUPS ───────────────────────────────────────────────────────────────
@@ -402,7 +409,7 @@ app.get('/api/chat-groups', auth, async (req, res) => {
     const last_message = await Message.findOne({ chat_id: g._id, chat_type: 'group' }).sort({ created_at: -1 });
     return {
       ...g.toObject(),
-      id: g.id,
+      id: String(g._id),
       branch_id: String(g.branch_id._id),
       department_id: String(g.department_id._id),
       branch_name: g.branch_id.name,
