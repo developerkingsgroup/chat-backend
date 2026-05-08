@@ -36,12 +36,22 @@ const SECRET  = process.env.JWT_SECRET || 'travkings_jwt_secret_change_me';
 // Connect to MongoDB
 connectDB().then(()=>{
   console.log("running seed")
-  seed()
+  // seed()
 })
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} request to ${req.url}`);
+    
+    // Optional: Inspect headers or body (requires body-parser or express.json)
+    // console.log('Headers:', req.headers);
+    // console.log('Body:', req.body);
+
+    next(); // Crucial: passes control to the next handler
+});
 
 // Static file serving
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
@@ -61,6 +71,7 @@ const signToken = (user) =>
 
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
+ 
   if (!token) return res.status(401).json({ error: 'Unauthorised' });
   try { req.user = jwt.verify(token, SECRET); next(); }
   catch { return res.status(401).json({ error: 'Invalid token' }); }
@@ -70,6 +81,21 @@ const adminOnly = (req, res, next) =>
   req.user.is_super_admin ? next() : res.status(403).json({ error: 'Admin only' });
 
 const safeUser = (u) => ({ id:u.id, name:u.name, email:u.email, role:u.role, avatar:u.avatar, color:u.color, is_super_admin:u.is_super_admin, is_active:u.is_active, last_seen:u.last_seen });
+
+// Flatten a populated message document into the shape the frontend expects
+const fmtMsg = (msg) => {
+  const obj = msg.toObject ? msg.toObject() : { ...msg };
+  const sender = obj.sender_id;
+  const isPopulated = sender && typeof sender === 'object';
+  return {
+    ...obj,
+    id: String(obj._id),
+    sender_id: isPopulated ? String(sender._id) : sender,
+    sender_name: isPopulated ? (sender.name || '') : '',
+    sender_avatar: isPopulated ? (sender.avatar || '👤') : '👤',
+    sender_color: isPopulated ? (sender.color || '#3B82F6') : '#3B82F6',
+  };
+};
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 const clients = new Map(); // userId → WebSocket
@@ -262,7 +288,7 @@ app.get('/api/companies', auth, async (_req, res) => {
   const cos = await Company.find({}).sort({ name: 1 });
   const companiesWithBranches = await Promise.all(cos.map(async c => {
     const branches = await Branch.find({ company_id: c._id }).sort({ name: 1 });
-    return { ...c.toObject(), branches };
+    return { ...c.toObject(), id: c.id, branches };
   }));
   res.json(companiesWithBranches);
 });
@@ -281,7 +307,7 @@ app.post('/api/companies', auth, adminOnly, async (req, res) => {
   // Grant access to all super admins
   const admins = await User.find({ is_super_admin: true }, '_id');
   await UserCompany.insertMany(admins.map(a => ({ user_id: a._id, company_id: id })));
-  res.status(201).json({ ...company.toObject(), branches: [] });
+  res.status(201).json({ ...company.toObject(), id: company.id, branches: [] });
 });
 
 app.put('/api/companies/:id', auth, adminOnly, async (req, res) => {
@@ -376,17 +402,18 @@ app.get('/api/chat-groups', auth, async (req, res) => {
     const last_message = await Message.findOne({ chat_id: g._id, chat_type: 'group' }).sort({ created_at: -1 });
     return {
       ...g.toObject(),
+      id: g.id,
       branch_name: g.branch_id.name,
       city: g.branch_id.city,
       branch_avatar: g.branch_id.avatar,
       branch_color: g.branch_id.color,
-      company_id: g.branch_id.company_id,
+      company_id: String(g.branch_id.company_id),
       dept_name: g.department_id.name,
       short_name: g.department_id.short_name,
       dept_icon: g.department_id.icon,
       dept_color: g.department_id.color,
       unread,
-      last_message,
+      last_message: last_message ? fmtMsg(last_message) : null,
     };
   }));
   res.json(enrichedGroups);
@@ -410,7 +437,7 @@ app.get('/api/messages/:chatType/:chatId', auth, async (req, res) => {
     { chat_id: chatId, chat_type: chatType, sender_id: { $ne: req.user.id }, is_read: false },
     { $set: { is_read: true } }
   );
-  res.json(msgs.reverse());
+  res.json(msgs.reverse().map(fmtMsg));
 });
 
 app.post('/api/messages', auth, async (req, res) => {
@@ -429,14 +456,24 @@ app.post('/api/messages', auth, async (req, res) => {
     duration: duration||null,
   });
   const populatedMsg = await Message.findById(id).populate({ path: 'sender_id', select: 'name avatar color' });
+  const formatted = fmtMsg(populatedMsg);
   // Broadcast via WebSocket
   if (chat_type === 'group') {
-    const allUsers = await User.find({ is_active: true }, '_id');
-    emit(allUsers.map(u => u._id), 'new_message', populatedMsg);
+    const group = await ChatGroup.findById(chat_id);
+    if (group) {
+      const [branchMembers, deptMembers] = await Promise.all([
+        UserBranch.find({ branch_id: group.branch_id }, 'user_id'),
+        UserDepartment.find({ department_id: group.department_id }, 'user_id'),
+      ]);
+      const branchSet = new Set(branchMembers.map(u => u.user_id.toString()));
+      const deptSet = new Set(deptMembers.map(u => u.user_id.toString()));
+      const memberIds = [...branchSet].filter(i => deptSet.has(i));
+      emit(memberIds, 'new_message', formatted);
+    }
   } else {
-    emit([chat_id, req.user.id], 'new_message', populatedMsg);
+    emit([chat_id, req.user.id], 'new_message', formatted);
   }
-  res.status(201).json(populatedMsg);
+  res.status(201).json(formatted);
 });
 
 // File upload
