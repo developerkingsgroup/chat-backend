@@ -403,6 +403,8 @@ app.get('/api/chat-groups', auth, async (req, res) => {
     return {
       ...g.toObject(),
       id: g.id,
+      branch_id: String(g.branch_id._id),
+      department_id: String(g.department_id._id),
       branch_name: g.branch_id.name,
       city: g.branch_id.city,
       branch_avatar: g.branch_id.avatar,
