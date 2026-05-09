@@ -41,6 +41,10 @@ const ReminderSchema = new mongoose.Schema({
   reviewed_at: {
     type: Date
   },
+  rejection_reason: {
+    type: String,
+    default: ''
+  },
   created_at: {
     type: Date,
     default: Date.now

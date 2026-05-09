@@ -35,8 +35,7 @@ const SECRET  = process.env.JWT_SECRET || 'travkings_jwt_secret_change_me';
 
 // Connect to MongoDB
 connectDB().then(()=>{
-  console.log("running seed")
-  // seed()
+  // seed() // — run manually via: node seed.js
 })
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -693,18 +692,15 @@ app.put('/api/reminders/:id', auth, async (req, res) => {
 });
 
 app.patch('/api/reminders/:id/status', auth, async (req, res) => {
-  const { status } = req.body;
+  const { status, rejection_reason } = req.body;
   const valid = ['pending','review','approved','rejected'];
   if (!valid.includes(status)) return res.status(400).json({ error: 'Invalid status' });
   const rem = await Reminder.findById(req.params.id);
   if (!rem) return res.status(404).json({ error: 'Not found' });
-  await Reminder.findByIdAndUpdate(req.params.id, {
-    status,
-    reviewed_by: req.user.id,
-    reviewed_at: new Date(),
-    updated_at: new Date(),
-  });
-  emit([rem.for_user_id, rem.created_by, req.user.id], 'reminder_updated', { id: rem._id, status });
+  const update = { status, reviewed_by: req.user.id, reviewed_at: new Date(), updated_at: new Date() };
+  if (rejection_reason) update.rejection_reason = rejection_reason;
+  await Reminder.findByIdAndUpdate(req.params.id, update);
+  emit([String(rem.for_user_id), String(rem.created_by), req.user.id], 'reminder_updated', { id: String(rem._id), status, rejection_reason: rejection_reason || '' });
   res.json({ ok: true });
 });
 
