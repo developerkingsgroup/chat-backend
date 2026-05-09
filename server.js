@@ -532,6 +532,38 @@ app.post('/api/messages', auth, async (req, res) => {
   res.status(201).json(formatted);
 });
 
+// Edit message (sender only)
+app.put('/api/messages/:id', auth, async (req, res) => {
+  try {
+    const msg = await Message.findById(req.params.id);
+    if (!msg) return res.status(404).json({ error: 'Not found' });
+    if (String(msg.sender_id) !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    msg.content = req.body.content;
+    msg.is_edited = true;
+    msg.edited_at = new Date();
+    await msg.save();
+    const populated = await Message.findById(msg._id).populate({ path: 'sender_id', select: 'name avatar color' });
+    const formatted = fmtMsg(populated);
+    emit([...clients.keys()], 'message_updated', formatted);
+    res.json(formatted);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Soft-delete message (sender only)
+app.delete('/api/messages/:id', auth, async (req, res) => {
+  try {
+    const msg = await Message.findById(req.params.id);
+    if (!msg) return res.status(404).json({ error: 'Not found' });
+    if (String(msg.sender_id) !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    msg.is_deleted = true;
+    msg.content = 'This message was deleted';
+    await msg.save();
+    const formatted = fmtMsg(msg);
+    emit([...clients.keys()], 'message_updated', formatted);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // File upload
 app.post('/api/messages/upload', auth, upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
