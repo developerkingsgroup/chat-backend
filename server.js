@@ -449,11 +449,23 @@ app.get('/api/messages/:chatType/:chatId', auth, async (req, res) => {
     .sort({ created_at: -1 })
     .limit(limit);
 
-  // Mark as read
+  // Find unread senders before marking as read (to notify them)
+  const unread = await Message.find(
+    { chat_id: chatId, chat_type: chatType, sender_id: { $ne: req.user.id }, is_read: false },
+    'sender_id'
+  );
   await Message.updateMany(
     { chat_id: chatId, chat_type: chatType, sender_id: { $ne: req.user.id }, is_read: false },
     { $set: { is_read: true } }
   );
+  // Notify each unique sender that their messages were read
+  const senderIds = [...new Set(unread.map(m => String(m.sender_id)))];
+  senderIds.forEach(senderId => {
+    const senderWs = clients.get(senderId);
+    if (senderWs?.readyState === 1) {
+      senderWs.send(JSON.stringify({ event: 'message_read', data: { chatId, chatType, readBy: req.user.id } }));
+    }
+  });
   res.json(msgs.reverse().map(fmtMsg));
 });
 
