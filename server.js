@@ -658,13 +658,14 @@ app.get('/api/reminders', auth, async (req, res) => {
   if      (view === 'mine')   { query = { for_user_id: me }; }
   else if (view === 'others') { query = { created_by: me, for_user_id: { $ne: me } }; }
   else if (view === 'review') { query = { status: 'review' }; }
+  else if (view === 'all')    { if (!req.user.is_super_admin) query = { $or: [{ for_user_id: me }, { created_by: me }] }; }
   else if (!req.user.is_super_admin) { query = { $or: [{ for_user_id: me }, { created_by: me }] }; }
 
   const rems = await Reminder.find(query)
     .populate({ path: 'for_user_id', select: 'name avatar color role' })
     .populate({ path: 'created_by', select: 'name avatar' })
     .sort({ created_at: -1 });
-  res.json(rems);
+  res.json(rems.map(r => ({ ...r.toObject(), id: String(r._id) })));
 });
 
 app.post('/api/reminders', auth, async (req, res) => {
@@ -684,15 +685,10 @@ app.post('/api/reminders', auth, async (req, res) => {
 });
 
 app.put('/api/reminders/:id', auth, async (req, res) => {
-  const { title, note, due_date, priority, for_user_id } = req.body;
-  await Reminder.findByIdAndUpdate(req.params.id, {
-    title,
-    note,
-    due_date,
-    priority,
-    for_user_id,
-    updated_at: new Date(),
-  });
+  const { title, note, due_date, priority, for_user_id, status } = req.body;
+  const update = { title, note, due_date, priority, for_user_id, updated_at: new Date() };
+  if (status) update.status = status;
+  await Reminder.findByIdAndUpdate(req.params.id, update);
   res.json({ ok: true });
 });
 
