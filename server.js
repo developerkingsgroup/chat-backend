@@ -109,11 +109,19 @@ wss.on('connection', async(ws, req) => {
   try {
     const decoded = jwt.verify(token, SECRET);
     clients.set(decoded.id, ws);
-    // Update last_seen
     await User.findByIdAndUpdate(decoded.id, { last_seen: new Date() });
+
+    // Tell all other connected users this user is now online
+    const otherIds = [...clients.keys()].filter(id => id !== decoded.id);
+    emit(otherIds, 'user_presence', { userId: decoded.id, status: 'online' });
+
+    // Send snapshot of currently online users to the newly connected client
+    ws.send(JSON.stringify({ event: 'online_users_snapshot', data: { userIds: [...clients.keys()] } }));
+
     ws.on('close', async () => {
       clients.delete(decoded.id);
       await User.findByIdAndUpdate(decoded.id, { last_seen: new Date() });
+      emit([...clients.keys()], 'user_presence', { userId: decoded.id, status: 'offline' });
     });
     ws.send(JSON.stringify({ event: 'connected', data: { userId: decoded.id } }));
   } catch { ws.close(); }
@@ -627,6 +635,10 @@ app.get('/api/stats', auth, adminOnly, async (_req, res) => res.json({
   messages:    await Message.countDocuments(),
   reminders:   await Reminder.countDocuments(),
 }));
+
+app.get('/api/users/online', auth, (_req, res) => {
+  res.json([...clients.keys()]);
+});
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date() }));
 
