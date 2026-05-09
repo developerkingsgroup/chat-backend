@@ -35,7 +35,7 @@ const SECRET  = process.env.JWT_SECRET || 'travkings_jwt_secret_change_me';
 
 // Connect to MongoDB
 connectDB().then(()=>{
-  // seed() // — run manually via: node seed.js
+  seed() // — run manually via: node seed.js
 })
 
 // ── Middleware ────────────────────────────────────────────────────────────────
