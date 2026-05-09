@@ -118,6 +118,19 @@ wss.on('connection', async(ws, req) => {
     // Send snapshot of currently online users to the newly connected client
     ws.send(JSON.stringify({ event: 'online_users_snapshot', data: { userIds: [...clients.keys()] } }));
 
+    ws.on('message', (raw) => {
+      try {
+        const frame = JSON.parse(raw);
+        if (frame.type === 'typing') {
+          const otherIds = [...clients.keys()].filter(id => id !== decoded.id);
+          emit(otherIds, 'user_typing', {
+            chatId: frame.chatId, chatType: frame.chatType,
+            userId: decoded.id, isTyping: frame.isTyping,
+          });
+        }
+      } catch {}
+    });
+
     ws.on('close', async () => {
       clients.delete(decoded.id);
       await User.findByIdAndUpdate(decoded.id, { last_seen: new Date() });
