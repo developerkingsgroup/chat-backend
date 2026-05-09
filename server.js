@@ -450,6 +450,20 @@ app.get('/api/chat-groups', auth, async (req, res) => {
 });
 
 // ── MESSAGES ──────────────────────────────────────────────────────────────────
+// Search route MUST precede /:chatType/:chatId to avoid Express treating "search" as a param
+app.get('/api/messages/search', auth, async (req, res) => {
+  const { q, chat_type, chat_id } = req.query;
+  if (!q) return res.status(400).json({ error: 'q is required' });
+  const filter = { content: { $regex: q, $options: 'i' } };
+  if (chat_type) filter.chat_type = chat_type;
+  if (chat_id)   filter.chat_id   = chat_id;
+  const msgs = await Message.find(filter)
+    .populate({ path: 'sender_id', select: 'name avatar color' })
+    .sort({ created_at: -1 })
+    .limit(50);
+  res.json(msgs.map(fmtMsg));
+});
+
 app.get('/api/messages/:chatType/:chatId', auth, async (req, res) => {
   const { chatType, chatId } = req.params;
   const limit  = parseInt(req.query.limit) || 50;
