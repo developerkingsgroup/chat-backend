@@ -19,6 +19,11 @@ const ChatGroupSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  send_permission: {
+    type: String,
+    default: 'all',
+    enum: ['all', 'managers_only'],
+  },
   created_at: {
     type: Date,
     default: Date.now

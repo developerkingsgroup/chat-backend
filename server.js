@@ -449,6 +449,15 @@ app.get('/api/chat-groups', auth, async (req, res) => {
   res.json(enrichedGroups);
 });
 
+// ── CHAT GROUPS (permission) ──────────────────────────────────────────────────
+app.patch('/api/chat-groups/:id/permission', auth, adminOnly, async (req, res) => {
+  const { send_permission } = req.body;
+  if (!['all', 'managers_only'].includes(send_permission)) return res.status(400).json({ error: 'Invalid permission' });
+  const group = await ChatGroup.findByIdAndUpdate(req.params.id, { send_permission }, { new: true });
+  if (!group) return res.status(404).json({ error: 'Not found' });
+  res.json(toPlain(group));
+});
+
 // ── MESSAGES ──────────────────────────────────────────────────────────────────
 // Search route MUST precede /:chatType/:chatId to avoid Express treating "search" as a param
 app.get('/api/messages/search', auth, async (req, res) => {
@@ -498,6 +507,17 @@ app.get('/api/messages/:chatType/:chatId', auth, async (req, res) => {
 
 app.post('/api/messages', auth, async (req, res) => {
   const { chat_id, chat_type, type, content, file_url, file_name, file_size, duration } = req.body;
+
+  // Enforce group send_permission
+  if (chat_type === 'group') {
+    const group = await ChatGroup.findById(chat_id);
+    if (group?.send_permission === 'managers_only') {
+      const sender = await User.findById(req.user.id, 'role is_super_admin');
+      const allowed = sender?.is_super_admin || ['Manager', 'manager', 'Admin', 'admin'].includes(sender?.role);
+      if (!allowed) return res.status(403).json({ error: 'Only managers can send messages in this group' });
+    }
+  }
+
   const id = uuid();
   const msg = await Message.create({
     _id: id,
