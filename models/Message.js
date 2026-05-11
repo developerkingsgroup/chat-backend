@@ -16,7 +16,7 @@ const MessageSchema = new mongoose.Schema({
   },
   sender_id: {
     type: String,
-    ref: 'User',
+    ref: 'UserProfile',
     required: true
   },
   type: {

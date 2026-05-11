@@ -7,12 +7,12 @@ const CallLogSchema = new mongoose.Schema({
   },
   caller_id: {
     type: String,
-    ref: 'User',
+    ref: 'UserProfile',
     required: true
   },
   callee_id: {
     type: String,
-    ref: 'User',
+    ref: 'UserProfile',
     required: true
   },
   type: {

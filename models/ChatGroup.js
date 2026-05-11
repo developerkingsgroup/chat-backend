@@ -7,12 +7,10 @@ const ChatGroupSchema = new mongoose.Schema({
   },
   branch_id: {
     type: String,
-    ref: 'Branch',
     required: true
   },
   department_id: {
     type: String,
-    ref: 'Department',
     required: true
   },
   name: {

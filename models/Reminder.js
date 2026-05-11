@@ -26,17 +26,17 @@ const ReminderSchema = new mongoose.Schema({
   },
   for_user_id: {
     type: String,
-    ref: 'User',
+    ref: 'UserProfile',
     required: true
   },
   created_by: {
     type: String,
-    ref: 'User',
+    ref: 'UserProfile',
     required: true
   },
   reviewed_by: {
     type: String,
-    ref: 'User'
+    ref: 'UserProfile'
   },
   reviewed_at: {
     type: Date
