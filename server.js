@@ -587,7 +587,10 @@ app.post("/api/users", auth, adminOnly, async (req, res) => {
       { upsert: true, new: true },
     );
     const profile = await UserProfile.findById(userId);
-    res.status(201).json(mergeUser(authUser, profile));
+    const formatted = mergeUser(authUser, profile);
+    // Notify all connected clients so their user lists update instantly
+    emit([...clients.keys()], "user_created", formatted);
+    res.status(201).json(formatted);
   } catch (e) {
     res
       .status(e.response?.status || 500)
