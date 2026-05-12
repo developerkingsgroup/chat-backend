@@ -283,6 +283,19 @@ const emit = (userIds, event, data) => {
   });
 };
 
+// Returns connected userIds who are members of the given group (branch+dept or super_admin)
+const groupMemberIds = (group) =>
+  [...clients.keys()].filter((uid) => {
+    const ra = clients.get(uid)?.roleAssignments || [];
+    if (ra.some((r) => r.role === "super_admin")) return true;
+    return (
+      ra.some((r) => String(r.entityId) === String(group.branch_id)) &&
+      ra.some((r) => String(r.entityId) === String(group.department_id))
+    );
+  });
+
+const PING_INTERVAL = 25000; // 25 s — must be less than any proxy idle timeout
+
 wss.on("connection", async (ws, req) => {
   const token = new URL(req.url, "ws://x").searchParams.get("token");
   try {
@@ -291,6 +304,15 @@ wss.on("connection", async (ws, req) => {
     const roleAssignments = user.roleAssignments || [];
 
     clients.set(userId, { ws, roleAssignments });
+
+    // ── Heartbeat: detect dead mobile connections ─────────────────────────────
+    let alive = true;
+    ws.on("pong", () => { alive = true; });
+    const heartbeatTimer = setInterval(() => {
+      if (!alive) { ws.terminate(); return; }
+      alive = false;
+      try { ws.ping(); } catch {}
+    }, PING_INTERVAL);
 
     // Notify other connected users
     const others = [...clients.keys()].filter((id) => id !== userId);
@@ -304,25 +326,37 @@ wss.on("connection", async (ws, req) => {
       }),
     );
 
-    ws.on("message", (raw) => {
+    ws.on("message", async (raw) => {
       try {
         const frame = JSON.parse(raw);
+
+        if (frame.type === "ping") {
+          ws.send(JSON.stringify({ event: "pong" }));
+          return;
+        }
+
         if (frame.type === "typing") {
-          emit(
-            [...clients.keys()].filter((id) => id !== userId),
-            "user_typing",
-            {
-              chatId: frame.chatId,
-              chatType: frame.chatType,
-              userId,
-              isTyping: frame.isTyping,
-            },
-          );
+          let targetIds;
+          if (frame.chatType === "direct") {
+            // Only the DM partner should see the typing indicator
+            targetIds = [frame.chatId];
+          } else {
+            // Only members of that group should see it
+            const group = await ChatGroup.findById(frame.chatId).lean();
+            targetIds = group ? groupMemberIds(group).filter((id) => id !== userId) : [];
+          }
+          emit(targetIds, "user_typing", {
+            chatId: frame.chatId,
+            chatType: frame.chatType,
+            userId,
+            isTyping: frame.isTyping,
+          });
         }
       } catch {}
     });
 
     ws.on("close", () => {
+      clearInterval(heartbeatTimer);
       clients.delete(userId);
       emit([...clients.keys()], "user_presence", { userId, status: "offline" });
     });
@@ -926,6 +960,7 @@ app.post("/api/messages", auth, async (req, res) => {
     file_name,
     file_size,
     duration,
+    reply_to,
   } = req.body;
 
   if (chat_type === "group") {
@@ -945,6 +980,22 @@ app.post("/api/messages", auth, async (req, res) => {
     }
   }
 
+  // Build reply snapshot so readers never need an extra join
+  let reply_to_snapshot = null;
+  if (reply_to) {
+    const orig = await Message.findById(reply_to)
+      .populate({ path: "sender_id", select: "name" });
+    if (orig) {
+      reply_to_snapshot = {
+        sender_name: orig.sender_id?.name || "",
+        content: orig.is_deleted
+          ? "This message was deleted"
+          : orig.content || orig.file_name || orig.type,
+        type: orig.type,
+      };
+    }
+  }
+
   const id = uuid();
   await Message.create({
     _id: id,
@@ -957,6 +1008,8 @@ app.post("/api/messages", auth, async (req, res) => {
     file_name: file_name || null,
     file_size: file_size || null,
     duration: duration || null,
+    reply_to: reply_to || null,
+    reply_to_snapshot,
   });
   const populatedMsg = await Message.findById(id).populate({
     path: "sender_id",
@@ -965,24 +1018,23 @@ app.post("/api/messages", auth, async (req, res) => {
   const formatted = fmtMsg(populatedMsg);
 
   if (chat_type === "group") {
-    const group = await ChatGroup.findById(chat_id);
-    if (group) {
-      // Broadcast to connected users who belong to this branch+dept, plus all super_admins
-      const memberIds = [...clients.keys()].filter((uid) => {
-        const ra = clients.get(uid)?.roleAssignments || [];
-        if (ra.some((r) => r.role === "super_admin")) return true;
-        return (
-          ra.some((r) => String(r.entityId) === String(group.branch_id)) &&
-          ra.some((r) => String(r.entityId) === String(group.department_id))
-        );
-      });
-      emit(memberIds, "new_message", formatted);
-    }
+    const group = await ChatGroup.findById(chat_id).lean();
+    if (group) emit(groupMemberIds(group), "new_message", formatted);
   } else {
     emit([chat_id, req.user.id], "new_message", formatted);
   }
   res.status(201).json(formatted);
 });
+
+// Emit message_updated only to the users who are part of that conversation
+const emitMsgUpdate = async (msg, formatted) => {
+  if (msg.chat_type === "group") {
+    const group = await ChatGroup.findById(msg.chat_id).lean();
+    if (group) emit(groupMemberIds(group), "message_updated", formatted);
+  } else {
+    emit([String(msg.chat_id), String(msg.sender_id)], "message_updated", formatted);
+  }
+};
 
 app.put("/api/messages/:id", auth, async (req, res) => {
   try {
@@ -996,10 +1048,10 @@ app.put("/api/messages/:id", auth, async (req, res) => {
     await msg.save();
     const populated = await Message.findById(msg._id).populate({
       path: "sender_id",
-      select: "name avatar color",
+      select: "_id name avatar color",
     });
     const formatted = fmtMsg(populated);
-    emit([...clients.keys()], "message_updated", formatted);
+    await emitMsgUpdate(msg, formatted);
     res.json(formatted);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1015,7 +1067,7 @@ app.delete("/api/messages/:id", auth, async (req, res) => {
     msg.is_deleted = true;
     msg.content = "This message was deleted";
     await msg.save();
-    emit([...clients.keys()], "message_updated", fmtMsg(msg));
+    await emitMsgUpdate(msg, fmtMsg(msg));
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1220,6 +1272,7 @@ app.get("/api/health", (_req, res) => res.json({ ok: true, ts: new Date() }));
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
+  
   console.log(`✅  Chat backend  → http://localhost:${PORT}`);
   console.log(`✅  WebSocket     → ws://localhost:${PORT}`);
   console.log(`✅  kings-auth    → ${AUTH_URL}`);

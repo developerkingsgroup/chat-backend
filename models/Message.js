@@ -39,6 +39,15 @@ const MessageSchema = new mongoose.Schema({
   duration: {
     type: Number
   },
+  reply_to: {
+    type: String,
+    default: null,
+  },
+  reply_to_snapshot: {
+    sender_name: { type: String, default: null },
+    content:     { type: String, default: null },
+    type:        { type: String, default: null },
+  },
   is_read: {
     type: Boolean,
     default: false
